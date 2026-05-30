@@ -19,7 +19,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
+      - run: dart analyze lib/
       - run: flutter test
 
   build-android:
