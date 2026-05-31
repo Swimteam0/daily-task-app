@@ -25,6 +25,12 @@ jobs:
 
       - run: flutter pub get
 
+      # Verify environment
+      - name: Check environment
+        run: |
+          java -version
+          flutter doctor -v
+
       # Build universal APK (works on all devices)
       - name: Build universal APK
         run: flutter build apk --release
