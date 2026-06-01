@@ -33,7 +33,7 @@ jobs:
 
       # Build universal APK (works on all devices)
       - name: Build universal APK
-        run: flutter build apk --release
+        run: flutter build apk --release -v 2>&1 | tee build.log; if [ ${PIPESTATUS[0]} -ne 0 ]; then echo "=== LAST 100 LINES OF BUILD LOG ==="; tail -100 build.log; exit 1; fi
 
       # List output to verify APK exists
       - name: List APK output
