@@ -19,6 +19,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   int _taskType = 1;
+  DateTime? _taskDate;
   TimeOfDay? _remindTime;
   bool _remindEnabled = false;
   final Set<int> _repeatDays = {};
@@ -34,6 +35,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     if (isEditing) {
       _taskType = widget.task!.taskType;
       _remindEnabled = widget.task!.remindEnabled;
+      if (widget.task!.taskDate != null) {
+        _taskDate = DateTime.tryParse(widget.task!.taskDate!);
+      }
       if (widget.task!.remindTime != null) {
         final parts = widget.task!.remindTime!.split(':');
         _remindTime = TimeOfDay(
@@ -45,6 +49,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         _repeatDays.addAll(
           widget.task!.repeatDays!.split(',').map(int.parse),
         );
+      }
+    } else {
+      // 新建单日任务时默认选择今天
+      if (_taskType == 2) {
+        _taskDate = DateTime.now();
       }
     }
   }
@@ -124,6 +133,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   if (_taskType == 2) {
                     _repeatDays.clear();
                     _remindEnabled = false;
+                    _taskDate ??= DateTime.now();
                   }
                 });
               },
@@ -134,6 +144,42 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Task date (only for single-day tasks)
+            if (_taskType == 2) ...[
+              Text('任务日期', style: AppTextStyles.h3),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _pickDate,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        _taskDate != null
+                            ? '${_taskDate!.year}-${_taskDate!.month.toString().padLeft(2, '0')}-${_taskDate!.day.toString().padLeft(2, '0')}'
+                            : '选择日期',
+                        style: AppTextStyles.body,
+                      ),
+                      const Spacer(),
+                      if (_taskDate != null)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () => setState(() => _taskDate = null),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // Repeat days (only for recurring tasks)
             if (_taskType == 1) ...[
@@ -246,6 +292,21 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _taskDate ?? now,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date != null) {
+      setState(() {
+        _taskDate = date;
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -264,6 +325,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       repeatDaysStr = sorted.join(',');
     }
 
+    String? taskDateStr;
+    if (_taskType == 2 && _taskDate != null) {
+      taskDateStr = '${_taskDate!.year}-${_taskDate!.month.toString().padLeft(2, '0')}-${_taskDate!.day.toString().padLeft(2, '0')}';
+    }
+
     final task = Task(
       id: widget.task?.id,
       title: _titleController.text.trim(),
@@ -271,6 +337,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           ? null
           : _descriptionController.text.trim(),
       taskType: _taskType,
+      taskDate: taskDateStr,
       remindTime: remindTimeStr,
       remindEnabled: _remindEnabled,
       repeatDays: repeatDaysStr,

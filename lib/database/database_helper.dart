@@ -20,9 +20,17 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // 添加 task_date 字段
+      await db.execute('ALTER TABLE tasks ADD COLUMN task_date TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {

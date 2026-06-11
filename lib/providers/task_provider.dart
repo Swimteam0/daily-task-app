@@ -20,9 +20,27 @@ class TaskProvider extends ChangeNotifier {
   List<Task> get todayTasks {
     return _tasks.where((task) {
       if (task.taskType == 2) {
-        // 单日任务：检查是否是今天创建的
+        // 单日任务：检查 taskDate 是否是今天
+        if (task.taskDate != null) {
+          return task.taskDate == AppDateUtils.todayString();
+        }
+        // 兼容旧数据：检查 createdAt
         return task.createdAt.startsWith(AppDateUtils.todayString());
       }
+      return AppDateUtils.shouldShowTask(task.repeatDays, task.taskType);
+    }).toList();
+  }
+
+  /// 获取指定日期的任务
+  List<Task> getTasksByDate(String date) {
+    return _tasks.where((task) {
+      if (task.taskType == 2) {
+        if (task.taskDate != null) {
+          return task.taskDate == date;
+        }
+        return task.createdAt.startsWith(date);
+      }
+      // 每日任务在任何日期都显示
       return AppDateUtils.shouldShowTask(task.repeatDays, task.taskType);
     }).toList();
   }
@@ -108,6 +126,43 @@ class TaskProvider extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  /// 补签功能：为指定日期打卡
+  Future<CheckIn?> makeupCheckIn(int taskId, String date) async {
+    try {
+      // 检查是否已经打卡
+      final existingCheckIns = await _checkInDao.getCheckInsByDate(date);
+      if (existingCheckIns.any((c) => c.taskId == taskId)) {
+        return null; // 已经打卡
+      }
+
+      final now = DateTime.now();
+      final checkIn = CheckIn(
+        taskId: taskId,
+        checkInDate: date,
+        checkInTime: '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',
+        createdAt: AppDateUtils.formatDateTime(now),
+      );
+      final id = await _checkInDao.insertCheckIn(checkIn);
+      if (id > 0) {
+        // 如果补签的是今天，更新今日打卡状态
+        if (date == AppDateUtils.todayString()) {
+          _todayCheckedInTaskIds.add(taskId.toString());
+        }
+        notifyListeners();
+        return checkIn;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 检查指定日期是否已打卡
+  Future<bool> isTaskCheckedInOnDate(int taskId, String date) async {
+    final checkIns = await _checkInDao.getCheckInsByDate(date);
+    return checkIns.any((c) => c.taskId == taskId);
   }
 
   bool isTaskCheckedIn(int taskId) {

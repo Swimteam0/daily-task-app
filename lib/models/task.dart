@@ -3,6 +3,7 @@ class Task {
   final String title;
   final String? description;
   final int taskType; // 1=每日重复, 2=单日任务
+  final String? taskDate; // YYYY-MM-DD，单日任务的日期
   final String? remindTime; // HH:mm
   final bool remindEnabled;
   final String? repeatDays; // "1,2,3,4,5"
@@ -14,6 +15,7 @@ class Task {
     required this.title,
     this.description,
     required this.taskType,
+    this.taskDate,
     this.remindTime,
     this.remindEnabled = false,
     this.repeatDays,
@@ -27,6 +29,7 @@ class Task {
       'title': title,
       'description': description,
       'task_type': taskType,
+      'task_date': taskDate,
       'remind_time': remindTime,
       'remind_enabled': remindEnabled ? 1 : 0,
       'repeat_days': repeatDays,
@@ -41,6 +44,7 @@ class Task {
       title: map['title'] as String,
       description: map['description'] as String?,
       taskType: map['task_type'] as int,
+      taskDate: map['task_date'] as String?,
       remindTime: map['remind_time'] as String?,
       remindEnabled: (map['remind_enabled'] as int) == 1,
       repeatDays: map['repeat_days'] as String?,
@@ -54,6 +58,7 @@ class Task {
     String? title,
     String? description,
     int? taskType,
+    String? taskDate,
     String? remindTime,
     bool? remindEnabled,
     String? repeatDays,
@@ -65,6 +70,7 @@ class Task {
       title: title ?? this.title,
       description: description ?? this.description,
       taskType: taskType ?? this.taskType,
+      taskDate: taskDate ?? this.taskDate,
       remindTime: remindTime ?? this.remindTime,
       remindEnabled: remindEnabled ?? this.remindEnabled,
       repeatDays: repeatDays ?? this.repeatDays,
